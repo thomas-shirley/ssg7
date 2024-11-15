@@ -1,9 +1,10 @@
 #/usr/bin/env bash
 
 # general
-sitename="sitename"
-baseurl="https://example.org"
+sitename="postprose"
+baseurl="https://postprose.net"
 lang="en"
+datedfolders=true
 
 # color theme
 background_color="#f6f7fc"
@@ -21,26 +22,17 @@ local html="<!DOCTYPE html>
 <meta charset=\"utf-8\">
 <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
 <title>$title</title>
-<style>
-body {max-width:650px;margin:0 auto;padding:1em;background-color:$background_color;color:$text_color;font-size:1.125em;font-family:Helvetica,Arial,sans-serif;}
-a {color:$link_color;text-decoration:none;}
-p, ul li, ol li {margin-bottom: 1em; line-height: 1.5em;}
-date {font-size: 0.9em;}
-blockquote {border-left:5px solid $quote_color;margin:0;padding-left:1em;}
-</style>
 </head>
 <body>
 <main>
 $content
 </main>
-<hr>
 <footer>
-<small>Built with <a href=https://github.com/ertfm/ssg7>ssg7.</a></small>
 </footer>
 </html>
 "
 
-printf "$html"
+printf "%s\n" "$html"
 }
 
 wrap_index_content(){
@@ -53,8 +45,7 @@ local index_content="
 $content
 </ul>
 "
-
-printf "$index_content"
+printf "%s\n" "$index_content"
 }
 
 usage() {
@@ -79,14 +70,24 @@ for ((i=${#mdfiles[@]}-1;i>=0;i--)); do
   read -r pubdate name ext <<< ${filename//./ }
   post=$(markdown $source_dir/$filename)
   [[ $post =~ \<h1\>(.*)\</h1\> ]] && post_title=${BASH_REMATCH[1]}
+  echo $filename
+  #Check to see whether we should create dated folders and nest the posts
+  if [[ "$datedfolders" == "true" ]]; then
+  mkdir $posts_dir/${filename:0:10}
+  strippedfilename=${filename#*.}
+  cleanfilename=${strippedfilename%.*}
+  datefolder=${filename:0:10}
+  render_template "$post_title" "$post" > $posts_dir/${datefolder}/${cleanfilename}.html
+  else
   render_template "$post_title" "$post" > $posts_dir/${filename%%.md}.html
+  fi
 
   # generate posts list for index
   posts_list+="
-  <li> 
-  <a href=\"$posts_url/${filename%%.md}.html\">$post_title</a>
+  <li style="list-style-type="none"">
+  <a href=\"$posts_url/$datefolder/${cleanfilename}.html\">$post_title</a>
   -
-  <date>$pubdate</date>
+  $pubdate
   </li>
   "
 done
